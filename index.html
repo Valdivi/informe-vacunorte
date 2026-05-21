@@ -6,6 +6,7 @@
 <title>Informe de Campañas — Vacunorte Mayo 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root {
     --blue:#1a56a0;--blue-light:#e8f0fb;--blue-mid:#3575c7;
@@ -736,12 +737,199 @@ function initCharts(){
   if(cRD)new Chart(cRD,{type:'bar',data:{labels:['13–17','18–24','25–34','35–44','45–54','55–64','65+'],datasets:[{label:'Hombres',data:[0,1,5,2,5,0,0],backgroundColor:'#3575c7',borderRadius:3},{label:'Mujeres',data:[0,0,6,6,3,2,0],backgroundColor:'#0f8c6e',borderRadius:3}]},options:{...opts(),plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:12}}}}});
 }
 
+// ===== SUPABASE + LOCALSTORAGE =====
+const SB_URL='https://gsxagzjktdovwucbsjho.supabase.co';
+const SB_KEY='sb_publishable_fgcyi7whz-Fmtt1eHXr8mw_WX1lJbOW';
+const BUCKET='informe-vacunorte';
+const STORE='vacunorte_urls_v1';
+let sbClient=null;
+
+function getSB(){
+  if(!sbClient){
+    const {createClient}=supabase;
+    sbClient=createClient(SB_URL,SB_KEY);
+  }
+  return sbClient;
+}
+
+// Upload file to Supabase Storage, return public URL
+async function uploadToSB(file, path){
+  const sb=getSB();
+  const {error}=await sb.storage.from(BUCKET).upload(path,file,{upsert:true,contentType:file.type});
+  if(error)throw error;
+  const {data}=sb.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// localStorage stores only URLs (tiny)
+const urlStore={};
+function saveURLs(){
+  try{localStorage.setItem(STORE,JSON.stringify(urlStore));}catch(e){}
+}
+function loadURLs(){
+  try{const r=localStorage.getItem(STORE);if(r)Object.assign(urlStore,JSON.parse(r));}catch(e){}
+}
+
+function showToast(msg,color){
+  let t=document.getElementById('sb-toast');
+  if(!t){t=document.createElement('div');t.id='sb-toast';
+    t.style.cssText='position:fixed;bottom:24px;right:24px;color:white;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);}
+  t.style.background=color||'#0f8c6e';
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2200);
+}
+
+// Override loadImg — upload to Supabase
+loadImg=async function(file,gridId,idx){
+  const slotId='slot-'+gridId+'-'+idx;
+  const slot=document.getElementById(slotId);
+  const ph=slot.querySelector('.slot-placeholder');
+  // Show preview immediately
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    if(ph)ph.style.display='none';
+    let img=slot.querySelector('img.slot-img');
+    if(!img){img=document.createElement('img');img.className='slot-img';slot.insertBefore(img,slot.firstChild);}
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  // Upload to Supabase
+  showToast('⬆ Subiendo imagen...','#3575c7');
+  try{
+    const path=gridId+'/'+idx+'_'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const url=await uploadToSB(file,path);
+    urlStore[slotId]=url;
+    saveURLs();
+    showToast('✓ Imagen guardada en la nube');
+  }catch(e){
+    showToast('⚠ Error al subir: '+e.message,'#d94f2b');
+    console.error(e);
+  }
+};
+
+// Override szLoadFile — upload to Supabase
+szLoadFile=async function(file,id){
+  const zone=document.getElementById(id);
+  const ph=document.getElementById(id+'-placeholder');
+  // Preview immediately
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    if(ph)ph.style.display='none';
+    let img=zone.querySelector('img');
+    if(!img){img=document.createElement('img');zone.insertBefore(img,zone.firstChild);}
+    img.src=ev.target.result;
+    img.style.cssText='max-width:100%;border-radius:8px;display:block;';
+    zone.style.cursor='default';
+    const rmv=zone.querySelector('.slot-remove');if(rmv)rmv.style.display='flex';
+  };
+  reader.readAsDataURL(file);
+  showToast('⬆ Subiendo captura...','#3575c7');
+  try{
+    const path='screenshots/'+id+'_'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const url=await uploadToSB(file,path);
+    urlStore[id]=url;
+    saveURLs();
+    showToast('✓ Captura guardada en la nube');
+  }catch(e){
+    showToast('⚠ Error: '+e.message,'#d94f2b');
+  }
+};
+
+// Override remove functions — delete from Supabase
+removeSlotImg=async function(e,gridId,idx){
+  e.stopPropagation();
+  const slotId='slot-'+gridId+'-'+idx;
+  const slot=document.getElementById(slotId);
+  const img=slot.querySelector('img.slot-img');if(img)img.remove();
+  const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='flex';
+  const inp=document.getElementById('inp-'+gridId+'-'+idx);if(inp)inp.value='';
+  if(urlStore[slotId]){
+    try{
+      // Extract path from URL
+      const url=urlStore[slotId];
+      const path=url.split('/object/public/'+BUCKET+'/')[1];
+      if(path)await getSB().storage.from(BUCKET).remove([decodeURIComponent(path)]);
+    }catch(e){}
+    delete urlStore[slotId];saveURLs();
+  }
+};
+
+szRemove=async function(e,id){
+  e.stopPropagation();
+  const zone=document.getElementById(id);
+  const img=zone.querySelector('img');if(img)img.remove();
+  const ph=document.getElementById(id+'-placeholder');if(ph)ph.style.display='flex';
+  zone.style.cursor='pointer';
+  const inp=document.getElementById(id+'-input');if(inp)inp.value='';
+  if(urlStore[id]){
+    try{
+      const url=urlStore[id];
+      const path=url.split('/object/public/'+BUCKET+'/')[1];
+      if(path)await getSB().storage.from(BUCKET).remove([decodeURIComponent(path)]);
+    }catch(e){}
+    delete urlStore[id];saveURLs();
+  }
+};
+
+// Rec persistence via localStorage
+const RECS_KEY='vacunorte_recs_v1';
+function saveRecs(){try{localStorage.setItem(RECS_KEY,JSON.stringify(recsData));}catch(e){}}
+function loadRecs(){
+  try{const r=localStorage.getItem(RECS_KEY);
+    if(r){const d=JSON.parse(r);recsData.length=0;d.forEach(x=>recsData.push(x));}}catch(e){}
+}
+const _sr=saveRec;saveRec=function(i,f,v){_sr(i,f,v);saveRecs();};
+const _dr=deleteRec;deleteRec=function(i){_dr(i);saveRecs();};
+const _rt=removeTag;removeTag=function(i,t){_rt(i,t);saveRecs();};
+const _at=addTag;addTag=function(l,c){_at(l,c);saveRecs();};
+
+// Restore images from stored URLs on load
+function restoreImages(){
+  Object.entries(urlStore).forEach(([id,url])=>{
+    // Check if it's a slot or screenshot zone
+    const slot=document.getElementById(id);
+    if(slot&&slot.classList.contains('photo-slot')){
+      const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='none';
+      let img=slot.querySelector('img.slot-img');
+      if(!img){img=document.createElement('img');img.className='slot-img';slot.insertBefore(img,slot.firstChild);}
+      img.src=url;
+    } else if(slot&&slot.classList.contains('screenshot-zone')){
+      const ph=document.getElementById(id+'-placeholder');if(ph)ph.style.display='none';
+      let img=slot.querySelector('img');
+      if(!img){img=document.createElement('img');slot.insertBefore(img,slot.firstChild);}
+      img.src=url;img.style.cssText='max-width:100%;border-radius:8px;display:block;';
+      slot.style.cursor='default';
+      const rmv=slot.querySelector('.slot-remove');if(rmv)rmv.style.display='flex';
+    }
+  });
+}
+
+function clearStorage(){
+  if(confirm('Esto borrara todas las URLs guardadas localmente. Las imagenes en Supabase se mantienen. Continuar?')){
+    localStorage.removeItem(STORE);
+    localStorage.removeItem(RECS_KEY);
+    location.reload();
+  }
+}
+
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded',()=>{
   initGrids();
+  loadURLs();
+  loadRecs();
+  restoreImages();
   renderRecs();
   initCharts();
-});
-</script>
+  const np=document.querySelector('#page-recs .nav-pills');
+  if(np){
+    const cb=document.createElement('button');
+    cb.className='nav-pill';
+    cb.style.cssText='color:#d94f2b;border-color:#d94f2b;';
+    cb.innerHTML='🗑 Limpiar caché local';
+    cb.onclick=clearStorage;
+    np.appendChild(cb);
+  }
+});</script>
 </body>
 </html>
