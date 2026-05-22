@@ -737,11 +737,11 @@ function initCharts(){
   if(cRD)new Chart(cRD,{type:'bar',data:{labels:['13–17','18–24','25–34','35–44','45–54','55–64','65+'],datasets:[{label:'Hombres',data:[0,1,5,2,5,0,0],backgroundColor:'#3575c7',borderRadius:3},{label:'Mujeres',data:[0,0,6,6,3,2,0],backgroundColor:'#0f8c6e',borderRadius:3}]},options:{...opts(),plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:12}}}}});
 }
 
-// ===== SUPABASE — imágenes y datos en la nube =====
+// ===== SUPABASE — DB + Storage =====
 const SB_URL='https://gsxagzjktdovwucbsjho.supabase.co';
 const SB_KEY='sb_publishable_fgcyi7whz-Fmtt1eHXr8mw_WX1lJbOW';
 const BUCKET='informe-vacunorte';
-const MANIFEST_PATH='_manifest.json';
+const DB_KEY='manifest_v1';
 let sbClient=null;
 
 function getSB(){
@@ -749,65 +749,57 @@ function getSB(){
   return sbClient;
 }
 
-// Estado en memoria
 let manifest={slots:{},szones:{},recs:null};
 
 // ── Toast ──────────────────────────────────────────
 function showToast(msg,color){
   let t=document.getElementById('sb-toast');
-  if(!t){t=document.createElement('div');t.id='sb-toast';
+  if(!t){
+    t=document.createElement('div');t.id='sb-toast';
     t.style.cssText='position:fixed;bottom:24px;right:24px;color:white;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;';
-    document.body.appendChild(t);}
+    document.body.appendChild(t);
+  }
   t.style.background=color||'#0f8c6e';
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2400);
 }
 
-// ── Guardar manifest en Supabase ───────────────────
+// ── Guardar manifest en DB ─────────────────────────
 async function saveManifest(){
   try{
-    const json=JSON.stringify(manifest);
-    const blob=new Blob([json],{type:'application/json'});
-    const file=new File([blob],MANIFEST_PATH,{type:'application/json'});
-    // Borrar primero para evitar problemas de caché en Supabase
-    await getSB().storage.from(BUCKET).remove([MANIFEST_PATH]);
-    const {error}=await getSB().storage.from(BUCKET).upload(MANIFEST_PATH,file,{upsert:false,contentType:'application/json',cacheControl:'0'});
-    if(error){
-      // Si falla, intentar con upsert
-      const {error:e2}=await getSB().storage.from(BUCKET).upload(MANIFEST_PATH,file,{upsert:true,contentType:'application/json',cacheControl:'0'});
-      if(e2)console.error('manifest save error',e2);
-    }
+    const {error}=await getSB()
+      .from('informe_data')
+      .upsert({key:DB_KEY, value:manifest, updated_at:new Date().toISOString()},
+              {onConflict:'key'});
+    if(error)console.error('saveManifest error',error);
   }catch(e){console.error('saveManifest',e);}
 }
 
-// ── Cargar manifest desde Supabase (sin caché) ─────
+// ── Cargar manifest desde DB ───────────────────────
 async function loadManifest(){
   try{
-    // Obtener URL pública del manifest
-    const {data:urlData}=getSB().storage.from(BUCKET).getPublicUrl(MANIFEST_PATH);
-    const publicUrl=urlData.publicUrl;
-    // Fetch con cache-busting para evitar versión vieja del navegador
-    const res=await fetch(publicUrl+'?t='+Date.now(),{cache:'no-store'});
-    if(!res.ok)return; // todavía no existe
-    const saved=await res.json();
+    const {data,error}=await getSB()
+      .from('informe_data')
+      .select('value')
+      .eq('key',DB_KEY)
+      .single();
+    if(error||!data)return;
+    const saved=data.value;
     if(saved.slots)Object.assign(manifest.slots,saved.slots);
     if(saved.szones)Object.assign(manifest.szones,saved.szones);
     if(saved.recs&&Array.isArray(saved.recs))manifest.recs=saved.recs;
-  }catch(e){console.warn('No manifest yet, starting fresh');}
+  }catch(e){console.warn('No manifest yet');}
 }
 
-// ── Restaurar imágenes desde manifest ─────────────
+// ── Restaurar imágenes ─────────────────────────────
 function restoreImages(){
-  // Slots
   Object.entries(manifest.slots).forEach(([slotId,url])=>{
-    const slot=document.getElementById(slotId);
-    if(!slot)return;
+    const slot=document.getElementById(slotId);if(!slot)return;
     const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='none';
     let img=slot.querySelector('img.slot-img');
     if(!img){img=document.createElement('img');img.className='slot-img';slot.insertBefore(img,slot.firstChild);}
     img.src=url;
   });
-  // Screenshot zones
   Object.entries(manifest.szones).forEach(([id,url])=>{
     const zone=document.getElementById(id);if(!zone)return;
     const ph=document.getElementById(id+'-placeholder');if(ph)ph.style.display='none';
@@ -817,7 +809,6 @@ function restoreImages(){
     zone.style.cursor='default';
     const rmv=zone.querySelector('.slot-remove');if(rmv)rmv.style.display='flex';
   });
-  // Recs
   if(manifest.recs&&Array.isArray(manifest.recs)){
     recsData.length=0;
     manifest.recs.forEach(r=>recsData.push(r));
@@ -836,7 +827,6 @@ async function uploadToSB(file,path){
 loadImg=async function(file,gridId,idx){
   const slotId='slot-'+gridId+'-'+idx;
   const slot=document.getElementById(slotId);
-  // Preview local inmediato
   const reader=new FileReader();
   reader.onload=ev=>{
     const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='none';
@@ -851,7 +841,7 @@ loadImg=async function(file,gridId,idx){
     const url=await uploadToSB(file,path);
     manifest.slots[slotId]=url;
     await saveManifest();
-    showToast('✓ Imagen guardada — visible para todos');
+    showToast('✓ Guardado — visible para todos');
   }catch(e){
     showToast('⚠ Error: '+e.message,'#d94f2b');
     console.error(e);
@@ -878,7 +868,7 @@ szLoadFile=async function(file,id){
     const url=await uploadToSB(file,path);
     manifest.szones[id]=url;
     await saveManifest();
-    showToast('✓ Captura guardada — visible para todos');
+    showToast('✓ Guardado — visible para todos');
   }catch(e){showToast('⚠ Error: '+e.message,'#d94f2b');console.error(e);}
 };
 
@@ -916,39 +906,18 @@ szRemove=async function(e,id){
   }
 };
 
-// ── Guardar recomendaciones en Supabase ────────────
+// ── Recomendaciones en DB ──────────────────────────
 async function saveRecsCloud(){
   manifest.recs=JSON.parse(JSON.stringify(recsData));
   await saveManifest();
 }
-
-// Patch rec functions
-const _sr=saveRec;
-saveRec=function(i,f,v){_sr(i,f,v);saveRecsCloud();};
-const _dr=deleteRec;
-deleteRec=function(i){_dr(i);saveRecsCloud();};
-const _rt=removeTag;
-removeTag=function(i,t){_rt(i,t);saveRecsCloud();};
-const _at=addTag;
-addTag=function(l,c){_at(l,c);saveRecsCloud();};
-// También al agregar nueva rec
-const origRender=renderRecs;
-renderRecs=function(){
-  origRender();
-  // Re-patch add-rec button
-  const addBtn=document.querySelector('.add-rec-btn');
-  if(addBtn){
-    const orig=addBtn.onclick;
-    addBtn.onclick=function(){
-      recsData.push({title:'Nueva recomendación',text:'Describe la acción aquí...',tags:[]});
-      renderRecs();
-      saveRecsCloud();
-    };
-  }
-};
+const _sr=saveRec;saveRec=function(i,f,v){_sr(i,f,v);saveRecsCloud();};
+const _dr=deleteRec;deleteRec=function(i){_dr(i);saveRecsCloud();};
+const _rt=removeTag;removeTag=function(i,t){_rt(i,t);saveRecsCloud();};
+const _at=addTag;addTag=function(l,c){_at(l,c);saveRecsCloud();};
 
 function clearAll(){
-  if(confirm('¿Borrar todas las imágenes y datos del informe en la nube? Esta acción no se puede deshacer.')){
+  if(confirm('¿Borrar todas las imágenes y datos del informe?')){
     manifest={slots:{},szones:{},recs:null};
     saveManifest().then(()=>location.reload());
   }
@@ -957,13 +926,12 @@ function clearAll(){
 // ── INIT ───────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
   initGrids();
-  showToast('⏳ Cargando informe...','#6b7c8d');
+  showToast('⏳ Cargando...','#6b7c8d');
   await loadManifest();
   restoreImages();
   renderRecs();
   initCharts();
-  showToast('✓ Informe cargado','#0f8c6e');
-  // Botón limpiar
+  showToast('✓ Listo','#0f8c6e');
   const np=document.querySelector('#page-recs .nav-pills');
   if(np){
     const cb=document.createElement('button');
