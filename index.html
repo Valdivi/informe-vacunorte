@@ -607,25 +607,31 @@ function removeSlotImg(e,gridId,idx){
 }
 function addSlotBtn(gridId){
   const g=document.getElementById(gridId);
+  const existing=g.querySelector('.add-slot-btn');
+  if(existing)existing.remove();
   const btn=document.createElement('div');
-  btn.className='photo-slot';
+  btn.className='photo-slot add-slot-btn';
   btn.style.cursor='pointer';
   btn.innerHTML='<div class="slot-placeholder"><span class="slot-icon" style="font-size:22px">＋</span><span class="slot-label">Agregar imagen</span></div>';
   btn.addEventListener('click',()=>{
-    const idx=g.querySelectorAll('.photo-slot').length-1;
-    // replace this btn with a real slot then add new btn
+    const realSlots=g.querySelectorAll('.photo-slot[id]').length;
+    const idx=realSlots;
     const newSlot=makeSlot(gridId,idx);
     g.insertBefore(newSlot,btn);
-    addSlotBtn(gridId); // add btn again
-    g.removeChild(btn);
-    document.getElementById(`inp-${gridId}-${idx}`).click();
+    document.getElementById('inp-'+gridId+'-'+idx).click();
   });
   g.appendChild(btn);
 }
 function initGrids(){
   Object.entries(grids).forEach(([gid,count])=>{
     const g=document.getElementById(gid);if(!g)return;
-    for(let i=0;i<count;i++)g.appendChild(makeSlot(gid,i));
+    // Check if manifest has extra slots for this grid
+    const extraCount=Object.keys(manifest.slots)
+      .filter(k=>k.startsWith('slot-'+gid+'-'))
+      .map(k=>parseInt(k.split('-').pop()))
+      .reduce((max,n)=>Math.max(max,n),-1)+1;
+    const total=Math.max(count,extraCount);
+    for(let i=0;i<total;i++)g.appendChild(makeSlot(gid,i));
     addSlotBtn(gid);
   });
 }
@@ -925,10 +931,10 @@ function clearAll(){
 
 // ── INIT ───────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
-  initGrids();
   showToast('⏳ Cargando...','#6b7c8d');
-  await loadManifest();
-  restoreImages();
+  await loadManifest(); // load FIRST so initGrids knows about extra slots
+  initGrids();          // create slots including extras from manifest
+  restoreImages();      // restore images into existing slots
   renderRecs();
   initCharts();
   showToast('✓ Listo','#0f8c6e');
