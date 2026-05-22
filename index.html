@@ -769,18 +769,27 @@ async function saveManifest(){
     const json=JSON.stringify(manifest);
     const blob=new Blob([json],{type:'application/json'});
     const file=new File([blob],MANIFEST_PATH,{type:'application/json'});
-    const {error}=await getSB().storage.from(BUCKET).upload(MANIFEST_PATH,file,{upsert:true,contentType:'application/json'});
-    if(error)console.error('manifest save error',error);
+    // Borrar primero para evitar problemas de caché en Supabase
+    await getSB().storage.from(BUCKET).remove([MANIFEST_PATH]);
+    const {error}=await getSB().storage.from(BUCKET).upload(MANIFEST_PATH,file,{upsert:false,contentType:'application/json',cacheControl:'0'});
+    if(error){
+      // Si falla, intentar con upsert
+      const {error:e2}=await getSB().storage.from(BUCKET).upload(MANIFEST_PATH,file,{upsert:true,contentType:'application/json',cacheControl:'0'});
+      if(e2)console.error('manifest save error',e2);
+    }
   }catch(e){console.error('saveManifest',e);}
 }
 
-// ── Cargar manifest desde Supabase ─────────────────
+// ── Cargar manifest desde Supabase (sin caché) ─────
 async function loadManifest(){
   try{
-    const {data,error}=await getSB().storage.from(BUCKET).download(MANIFEST_PATH);
-    if(error||!data)return;
-    const text=await data.text();
-    const saved=JSON.parse(text);
+    // Obtener URL pública del manifest
+    const {data:urlData}=getSB().storage.from(BUCKET).getPublicUrl(MANIFEST_PATH);
+    const publicUrl=urlData.publicUrl;
+    // Fetch con cache-busting para evitar versión vieja del navegador
+    const res=await fetch(publicUrl+'?t='+Date.now(),{cache:'no-store'});
+    if(!res.ok)return; // todavía no existe
+    const saved=await res.json();
     if(saved.slots)Object.assign(manifest.slots,saved.slots);
     if(saved.szones)Object.assign(manifest.szones,saved.szones);
     if(saved.recs&&Array.isArray(saved.recs))manifest.recs=saved.recs;
