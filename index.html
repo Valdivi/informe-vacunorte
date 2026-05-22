@@ -179,6 +179,7 @@
 </head>
 <body>
 
+<!-- COVER -->
 <div class="page active" id="page-cover">
   <div class="cover">
     <div class="cover-logo"><span>Vacunorte</span> · Informe de Redes y Campañas</div>
@@ -195,6 +196,7 @@
   </div>
 </div>
 
+<!-- OVERVIEW -->
 <div class="page" id="page-overview">
   <div class="page-inner">
     <div class="page-header">
@@ -239,6 +241,7 @@
       </div>
     </div>
 
+    <!-- SCREENSHOT ZONE under campaigns -->
     <p class="section-label">Evidencia — datos de campañas</p>
     <div class="screenshot-zone" id="sz-overview" onclick="document.getElementById('sz-overview-input').click()" ondragover="szDragOver(event,'sz-overview')" ondragleave="szDragLeave(event,'sz-overview')" ondrop="szDrop(event,'sz-overview')">
       <input type="file" id="sz-overview-input" accept="image/*" onchange="szLoad(event,'sz-overview')">
@@ -249,6 +252,7 @@
       </div>
     </div>
 
+    <!-- FACEBOOK FOLLOWERS -->
     <p class="section-label">Crecimiento orgánico — Facebook</p>
     <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:center;flex-wrap:wrap;gap:1.25rem;">
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
@@ -269,6 +273,7 @@
       <a href="https://www.facebook.com/professional_dashboard/profile_insights/views/" target="_blank" rel="noopener" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:#1877f2;color:white;text-decoration:none;padding:8px 16px;border-radius:999px;font-size:12px;font-weight:500;flex-shrink:0;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Ver en Meta ↗</a>
     </div>
 
+    <!-- TIKTOK TEASER -->
     <div class="tiktok-banner" onclick="goTo('page-tiktok')" style="cursor:pointer;margin-top:1.25rem">
       <div class="tiktok-icon">♪</div>
       <div class="tiktok-text">
@@ -304,13 +309,14 @@
   </div>
 </div>
 
+<!-- ASPIRANTES -->
 <div class="page" id="page-aspirantes">
   <div class="page-inner">
     <div class="page-header">
       <h2>Aspirantes Policía / FF.AA.</h2>
       <button class="btn-back" onclick="goTo('page-overview')">← Resumen general</button>
     </div>
-    <div class="alert alert-info"><div class="alert-title">🎯 Objetivo de campaña</div><p>Clics al enlace dirigidos a aspirantes de Policía Nacional y Fuerzas Armadas en 6 sucursales del Ecuador, communicating la obligatoriedad del esquema de vacunación para el ingreso.</p></div>
+    <div class="alert alert-info"><div class="alert-title">🎯 Objetivo de campaña</div><p>Clics al enlace dirigidos a aspirantes de Policía Nacional y Fuerzas Armadas en 6 sucursales del Ecuador, comunicando la obligatoriedad del esquema de vacunación para el ingreso.</p></div>
     <div class="metrics-grid">
       <div class="metric blue"><div class="metric-label">Clics en el enlace</div><div class="metric-value">1,605</div></div>
       <div class="metric blue"><div class="metric-label">Impresiones</div><div class="metric-value">56,615</div></div>
@@ -360,6 +366,7 @@
   </div>
 </div>
 
+<!-- REEL -->
 <div class="page" id="page-reel">
   <div class="page-inner">
     <div class="page-header">
@@ -399,6 +406,7 @@
   </div>
 </div>
 
+<!-- TRAFICO -->
 <div class="page" id="page-trafico">
   <div class="page-inner">
     <div class="page-header">
@@ -440,6 +448,7 @@
   </div>
 </div>
 
+<!-- TIKTOK -->
 <div class="page" id="page-tiktok">
   <div class="page-inner">
     <div class="page-header">
@@ -484,6 +493,7 @@
   </div>
 </div>
 
+<!-- POSTEOS -->
 <div class="page" id="page-posteos">
   <div class="page-inner">
     <div class="page-header">
@@ -507,6 +517,7 @@
   </div>
 </div>
 
+<!-- RECOMENDACIONES -->
 <div class="page" id="page-recs">
   <div class="page-inner">
     <div class="page-header">
@@ -526,6 +537,7 @@
   </div>
 </div>
 
+<!-- TAG PICKER POPUP -->
 <div id="tag-picker" class="tag-picker" style="display:none">
   <div class="tag-picker-item tag-meta" onclick="addTag('Meta Ads','tag-meta')">Meta Ads</div>
   <div class="tag-picker-item tag-tiktok" onclick="addTag('TikTok','tag-tiktok')">TikTok</div>
@@ -601,9 +613,10 @@ function addSlotBtn(gridId){
   btn.innerHTML='<div class="slot-placeholder"><span class="slot-icon" style="font-size:22px">＋</span><span class="slot-label">Agregar imagen</span></div>';
   btn.addEventListener('click',()=>{
     const idx=g.querySelectorAll('.photo-slot').length-1;
+    // replace this btn with a real slot then add new btn
     const newSlot=makeSlot(gridId,idx);
     g.insertBefore(newSlot,btn);
-    addSlotBtn(gridId);
+    addSlotBtn(gridId); // add btn again
     g.removeChild(btn);
     document.getElementById(`inp-${gridId}-${idx}`).click();
   });
@@ -724,53 +737,22 @@ function initCharts(){
   if(cRD)new Chart(cRD,{type:'bar',data:{labels:['13–17','18–24','25–34','35–44','45–54','55–64','65+'],datasets:[{label:'Hombres',data:[0,1,5,2,5,0,0],backgroundColor:'#3575c7',borderRadius:3},{label:'Mujeres',data:[0,0,6,6,3,2,0],backgroundColor:'#0f8c6e',borderRadius:3}]},options:{...opts(),plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:12}}}}});
 }
 
-// ===== SUPABASE + LOCALSTORAGE =====
+// ===== SUPABASE — imágenes y datos en la nube =====
 const SB_URL='https://gsxagzjktdovwucbsjho.supabase.co';
 const SB_KEY='sb_publishable_fgcyi7whz-Fmtt1eHXr8mw_WX1lJbOW';
 const BUCKET='informe-vacunorte';
-const STORE='vacunorte_urls_v1';
+const MANIFEST_PATH='_manifest.json';
 let sbClient=null;
 
 function getSB(){
-  if(!sbClient){
-    const {createClient}=supabase;
-    sbClient=createClient(SB_URL,SB_KEY);
-  }
+  if(!sbClient){sbClient=supabase.createClient(SB_URL,SB_KEY);}
   return sbClient;
 }
 
-// Upload file to Supabase Storage, return public URL
-async function uploadToSB(file, path){
-  const sb=getSB();
-  const {error}=await sb.storage.from(BUCKET).upload(path,file,{upsert:true,contentType:file.type});
-  if(error)throw error;
-  const {data}=sb.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
-}
+// Estado en memoria
+let manifest={slots:{},szones:{},recs:null};
 
-// localStorage stores only URLs (tiny)
-const urlStore={};
-function saveURLs(){
-  try{localStorage.setItem(STORE,JSON.stringify(urlStore));}catch(e){}
-}
-function loadURLs(){
-  try{const r=localStorage.getItem(STORE);if(r){
-    Object.assign(urlStore,JSON.parse(r));
-    Object.keys(urlStore).forEach(k => {
-      if(k.startsWith('slot-')){
-        const parts = k.split('-');
-        if(parts.length >= 3){
-          const idx = parseInt(parts.pop());
-          const gridId = parts.join('-');
-          if(grids[gridId] !== undefined && idx >= grids[gridId]){
-            grids[gridId] = idx + 1;
-          }
-        }
-      }
-    });
-  }}catch(e){}
-}
-
+// ── Toast ──────────────────────────────────────────
 function showToast(msg,color){
   let t=document.getElementById('sb-toast');
   if(!t){t=document.createElement('div');t.id='sb-toast';
@@ -778,17 +760,77 @@ function showToast(msg,color){
     document.body.appendChild(t);}
   t.style.background=color||'#0f8c6e';
   t.textContent=msg;t.style.opacity='1';
-  clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2200);
+  clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2400);
 }
 
-// Override loadImg — upload to Supabase
+// ── Guardar manifest en Supabase ───────────────────
+async function saveManifest(){
+  try{
+    const json=JSON.stringify(manifest);
+    const blob=new Blob([json],{type:'application/json'});
+    const file=new File([blob],MANIFEST_PATH,{type:'application/json'});
+    const {error}=await getSB().storage.from(BUCKET).upload(MANIFEST_PATH,file,{upsert:true,contentType:'application/json'});
+    if(error)console.error('manifest save error',error);
+  }catch(e){console.error('saveManifest',e);}
+}
+
+// ── Cargar manifest desde Supabase ─────────────────
+async function loadManifest(){
+  try{
+    const {data,error}=await getSB().storage.from(BUCKET).download(MANIFEST_PATH);
+    if(error||!data)return;
+    const text=await data.text();
+    const saved=JSON.parse(text);
+    if(saved.slots)Object.assign(manifest.slots,saved.slots);
+    if(saved.szones)Object.assign(manifest.szones,saved.szones);
+    if(saved.recs&&Array.isArray(saved.recs))manifest.recs=saved.recs;
+  }catch(e){console.warn('No manifest yet, starting fresh');}
+}
+
+// ── Restaurar imágenes desde manifest ─────────────
+function restoreImages(){
+  // Slots
+  Object.entries(manifest.slots).forEach(([slotId,url])=>{
+    const slot=document.getElementById(slotId);
+    if(!slot)return;
+    const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='none';
+    let img=slot.querySelector('img.slot-img');
+    if(!img){img=document.createElement('img');img.className='slot-img';slot.insertBefore(img,slot.firstChild);}
+    img.src=url;
+  });
+  // Screenshot zones
+  Object.entries(manifest.szones).forEach(([id,url])=>{
+    const zone=document.getElementById(id);if(!zone)return;
+    const ph=document.getElementById(id+'-placeholder');if(ph)ph.style.display='none';
+    let img=zone.querySelector('img');
+    if(!img){img=document.createElement('img');zone.insertBefore(img,zone.firstChild);}
+    img.src=url;img.style.cssText='max-width:100%;border-radius:8px;display:block;';
+    zone.style.cursor='default';
+    const rmv=zone.querySelector('.slot-remove');if(rmv)rmv.style.display='flex';
+  });
+  // Recs
+  if(manifest.recs&&Array.isArray(manifest.recs)){
+    recsData.length=0;
+    manifest.recs.forEach(r=>recsData.push(r));
+  }
+}
+
+// ── Subir imagen a Storage ─────────────────────────
+async function uploadToSB(file,path){
+  const {error}=await getSB().storage.from(BUCKET).upload(path,file,{upsert:true,contentType:file.type});
+  if(error)throw error;
+  const {data}=getSB().storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ── Override loadImg ───────────────────────────────
 loadImg=async function(file,gridId,idx){
   const slotId='slot-'+gridId+'-'+idx;
   const slot=document.getElementById(slotId);
-  const ph=slot.querySelector('.slot-placeholder');
+  // Preview local inmediato
   const reader=new FileReader();
   reader.onload=ev=>{
-    if(ph)ph.style.display='none';
+    const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='none';
     let img=slot.querySelector('img.slot-img');
     if(!img){img=document.createElement('img');img.className='slot-img';slot.insertBefore(img,slot.firstChild);}
     img.src=ev.target.result;
@@ -798,16 +840,16 @@ loadImg=async function(file,gridId,idx){
   try{
     const path=gridId+'/'+idx+'_'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
     const url=await uploadToSB(file,path);
-    urlStore[slotId]=url;
-    saveURLs();
-    showToast('✓ Imagen guardada en la nube');
+    manifest.slots[slotId]=url;
+    await saveManifest();
+    showToast('✓ Imagen guardada — visible para todos');
   }catch(e){
-    showToast('⚠ Error al subir: '+e.message,'#d94f2b');
+    showToast('⚠ Error: '+e.message,'#d94f2b');
     console.error(e);
   }
 };
 
-// Override szLoadFile — upload to Supabase
+// ── Override szLoadFile ────────────────────────────
 szLoadFile=async function(file,id){
   const zone=document.getElementById(id);
   const ph=document.getElementById(id+'-placeholder');
@@ -816,8 +858,7 @@ szLoadFile=async function(file,id){
     if(ph)ph.style.display='none';
     let img=zone.querySelector('img');
     if(!img){img=document.createElement('img');zone.insertBefore(img,zone.firstChild);}
-    img.src=ev.target.result;
-    img.style.cssText='max-width:100%;border-radius:8px;display:block;';
+    img.src=ev.target.result;img.style.cssText='max-width:100%;border-radius:8px;display:block;';
     zone.style.cursor='default';
     const rmv=zone.querySelector('.slot-remove');if(rmv)rmv.style.display='flex';
   };
@@ -826,15 +867,13 @@ szLoadFile=async function(file,id){
   try{
     const path='screenshots/'+id+'_'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
     const url=await uploadToSB(file,path);
-    urlStore[id]=url;
-    saveURLs();
-    showToast('✓ Captura guardada en la nube');
-  }catch(e){
-    showToast('⚠ Error: '+e.message,'#d94f2b');
-  }
+    manifest.szones[id]=url;
+    await saveManifest();
+    showToast('✓ Captura guardada — visible para todos');
+  }catch(e){showToast('⚠ Error: '+e.message,'#d94f2b');console.error(e);}
 };
 
-// Override remove functions — delete from Supabase
+// ── Override removes ───────────────────────────────
 removeSlotImg=async function(e,gridId,idx){
   e.stopPropagation();
   const slotId='slot-'+gridId+'-'+idx;
@@ -842,13 +881,13 @@ removeSlotImg=async function(e,gridId,idx){
   const img=slot.querySelector('img.slot-img');if(img)img.remove();
   const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='flex';
   const inp=document.getElementById('inp-'+gridId+'-'+idx);if(inp)inp.value='';
-  if(urlStore[slotId]){
+  if(manifest.slots[slotId]){
     try{
-      const url=urlStore[slotId];
-      const path=url.split('/object/public/'+BUCKET+'/')[1];
+      const path=manifest.slots[slotId].split('/object/public/'+BUCKET+'/')[1];
       if(path)await getSB().storage.from(BUCKET).remove([decodeURIComponent(path)]);
-    }catch(e){}
-    delete urlStore[slotId];saveURLs();
+    }catch(er){}
+    delete manifest.slots[slotId];
+    await saveManifest();
   }
 };
 
@@ -858,72 +897,71 @@ szRemove=async function(e,id){
   const img=zone.querySelector('img');if(img)img.remove();
   const ph=document.getElementById(id+'-placeholder');if(ph)ph.style.display='flex';
   zone.style.cursor='pointer';
-  const inp=document.getElementById(id+'-input');if(inp)inp.value='';
-  if(urlStore[id]){
+  if(manifest.szones[id]){
     try{
-      const url=urlStore[id];
-      const path=url.split('/object/public/'+BUCKET+'/')[1];
+      const path=manifest.szones[id].split('/object/public/'+BUCKET+'/')[1];
       if(path)await getSB().storage.from(BUCKET).remove([decodeURIComponent(path)]);
-    }catch(e){}
-    delete urlStore[id];saveURLs();
+    }catch(er){}
+    delete manifest.szones[id];
+    await saveManifest();
   }
 };
 
-// Rec persistence via localStorage
-const RECS_KEY='vacunorte_recs_v1';
-function saveRecs(){try{localStorage.setItem(RECS_KEY,JSON.stringify(recsData));}catch(e){}}
-function loadRecs(){
-  try{const r=localStorage.getItem(RECS_KEY);
-    if(r){const d=JSON.parse(r);recsData.length=0;d.forEach(x=>recsData.push(x));}}catch(e){}
-}
-const _sr=saveRec;saveRec=function(i,f,v){_sr(i,f,v);saveRecs();};
-const _dr=deleteRec;deleteRec=function(i){_dr(i);saveRecs();};
-const _rt=removeTag;removeTag=function(i,t){_rt(i,t);saveRecs();};
-const _at=addTag;addTag=function(l,c){_at(l,c);saveRecs();};
-
-// Restore images from stored URLs on load
-function restoreImages(){
-  Object.entries(urlStore).forEach(([id,url])=>{
-    const slot=document.getElementById(id);
-    if(slot&&slot.classList.contains('photo-slot')){
-      const ph=slot.querySelector('.slot-placeholder');if(ph)ph.style.display='none';
-      let img=slot.querySelector('img.slot-img');
-      if(!img){img=document.createElement('img');img.className='slot-img';slot.insertBefore(img,slot.firstChild);}
-      img.src=url;
-    } else if(slot&&slot.classList.contains('screenshot-zone')){
-      const ph=document.getElementById(id+'-placeholder');if(ph)ph.style.display='none';
-      let img=slot.querySelector('img');
-      if(!img){img=document.createElement('img');slot.insertBefore(img,slot.firstChild);}
-      img.src=url;img.style.cssText='max-width:100%;border-radius:8px;display:block;';
-      slot.style.cursor='default';
-      const rmv=slot.querySelector('.slot-remove');if(rmv)rmv.style.display='flex';
-    }
-  });
+// ── Guardar recomendaciones en Supabase ────────────
+async function saveRecsCloud(){
+  manifest.recs=JSON.parse(JSON.stringify(recsData));
+  await saveManifest();
 }
 
-function clearStorage(){
-  if(confirm('Esto borrara todas las URLs guardadas localmente. Las imagenes en Supabase se mantienen. Continuar?')){
-    localStorage.removeItem(STORE);
-    localStorage.removeItem(RECS_KEY);
-    location.reload();
+// Patch rec functions
+const _sr=saveRec;
+saveRec=function(i,f,v){_sr(i,f,v);saveRecsCloud();};
+const _dr=deleteRec;
+deleteRec=function(i){_dr(i);saveRecsCloud();};
+const _rt=removeTag;
+removeTag=function(i,t){_rt(i,t);saveRecsCloud();};
+const _at=addTag;
+addTag=function(l,c){_at(l,c);saveRecsCloud();};
+// También al agregar nueva rec
+const origRender=renderRecs;
+renderRecs=function(){
+  origRender();
+  // Re-patch add-rec button
+  const addBtn=document.querySelector('.add-rec-btn');
+  if(addBtn){
+    const orig=addBtn.onclick;
+    addBtn.onclick=function(){
+      recsData.push({title:'Nueva recomendación',text:'Describe la acción aquí...',tags:[]});
+      renderRecs();
+      saveRecsCloud();
+    };
+  }
+};
+
+function clearAll(){
+  if(confirm('¿Borrar todas las imágenes y datos del informe en la nube? Esta acción no se puede deshacer.')){
+    manifest={slots:{},szones:{},recs:null};
+    saveManifest().then(()=>location.reload());
   }
 }
 
-// ===== INIT =====
-window.addEventListener('DOMContentLoaded',()=>{
-  loadURLs();
+// ── INIT ───────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',async()=>{
   initGrids();
-  loadRecs();
+  showToast('⏳ Cargando informe...','#6b7c8d');
+  await loadManifest();
   restoreImages();
   renderRecs();
   initCharts();
+  showToast('✓ Informe cargado','#0f8c6e');
+  // Botón limpiar
   const np=document.querySelector('#page-recs .nav-pills');
   if(np){
     const cb=document.createElement('button');
     cb.className='nav-pill';
     cb.style.cssText='color:#d94f2b;border-color:#d94f2b;';
-    cb.innerHTML='🗑 Limpiar caché local';
-    cb.onclick=clearStorage;
+    cb.innerHTML='🗑 Borrar todo';
+    cb.onclick=clearAll;
     np.appendChild(cb);
   }
 });</script>
